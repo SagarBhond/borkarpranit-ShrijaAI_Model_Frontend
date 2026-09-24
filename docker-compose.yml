@@ -1,0 +1,24 @@
+name: hrms-frontend
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hrms-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - hrms-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+networks:
+  hrms-network:
+    external: true
+    name: hrms-network

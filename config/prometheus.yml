@@ -1,0 +1,49 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'order-saga-services'
+    metrics_path: '/api/producer/actuator/prometheus'
+    static_configs:
+      - targets:
+          - '__ALB_DNS_NAME__:80'
+        labels:
+          environment: 'production'
+          service: 'producer'
+
+  - job_name: 'order-saga-inventory'
+    metrics_path: '/api/inventory/actuator/prometheus'
+    static_configs:
+      - targets: ['__ALB_DNS_NAME__:80']
+        labels:
+          environment: 'production'
+          service: 'inventory'
+
+  - job_name: 'order-saga-payment'
+    metrics_path: '/api/payment/actuator/prometheus'
+    static_configs:
+      - targets: ['__ALB_DNS_NAME__:80']
+        labels:
+          environment: 'production'
+          service: 'payment'
+
+  - job_name: 'order-saga-notification'
+    metrics_path: '/api/notification/actuator/prometheus'
+    static_configs:
+      - targets: ['__ALB_DNS_NAME__:80']
+        labels:
+          environment: 'production'
+          service: 'notification'
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          instance_type: 'ec2-app-host'
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          instance_type: 'docker-containers'
