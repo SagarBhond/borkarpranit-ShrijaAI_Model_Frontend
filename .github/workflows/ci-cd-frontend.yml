@@ -34,6 +34,6 @@ jobs:
         with: { name: dist, path: dist }
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::882040517001:role/hrms-frontend-github-actions
           aws-region: ${{ env.AWS_REGION }}
       - run: aws s3 sync dist/ s3://${{ secrets.FRONTEND_BUCKET }} --delete
