@@ -5,6 +5,12 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      frontend_ec2_host:
+        description: EC2 public IP or DNS name (uses FRONTEND_EC2_HOST variable if blank)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -34,6 +40,8 @@ jobs:
           FRONTEND_EC2_SSH_KEY: ${{ secrets.FRONTEND_EC2_SSH_KEY }}
           FRONTEND_EC2_KNOWN_HOSTS: ${{ secrets.FRONTEND_EC2_KNOWN_HOSTS }}
         run: |
+          : "${FRONTEND_EC2_SSH_KEY:?Add FRONTEND_EC2_SSH_KEY in repository Actions secrets}"
+          : "${FRONTEND_EC2_KNOWN_HOSTS:?Add FRONTEND_EC2_KNOWN_HOSTS in repository Actions secrets}"
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$FRONTEND_EC2_SSH_KEY" > "$RUNNER_TEMP/frontend-deploy-key"
           chmod 600 "$RUNNER_TEMP/frontend-deploy-key"
@@ -41,7 +49,7 @@ jobs:
           chmod 600 "$RUNNER_TEMP/frontend-known-hosts"
       - name: Deploy static site to EC2
         env:
-          FRONTEND_EC2_HOST: ${{ secrets.FRONTEND_EC2_HOST }}
+          FRONTEND_EC2_HOST: ${{ inputs.frontend_ec2_host || vars.FRONTEND_EC2_HOST }}
           FRONTEND_SSH_KEY_FILE: ${{ runner.temp }}/frontend-deploy-key
           FRONTEND_KNOWN_HOSTS_FILE: ${{ runner.temp }}/frontend-known-hosts
         run: bash ./scripts/deploy-frontend.sh dist
