@@ -7,11 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  id-token: write
   contents: read
-
-env:
-  AWS_REGION: ap-south-1
 
 jobs:
   build-and-lint:
@@ -25,15 +21,27 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: { name: dist, path: dist, retention-days: 3 }
 
-  deploy-s3:
+  deploy-ec2:
     if: github.ref == 'refs/heads/main'
     needs: build-and-lint
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { name: dist, path: dist }
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::882040517001:role/hrms-frontend-github-actions
-          aws-region: ${{ env.AWS_REGION }}
-      - run: aws s3 sync dist/ s3://${{ secrets.FRONTEND_BUCKET }} --delete
+      - name: Prepare SSH credentials
+        env:
+          FRONTEND_EC2_SSH_KEY: ${{ secrets.FRONTEND_EC2_SSH_KEY }}
+          FRONTEND_EC2_KNOWN_HOSTS: ${{ secrets.FRONTEND_EC2_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$FRONTEND_EC2_SSH_KEY" > "$RUNNER_TEMP/frontend-deploy-key"
+          chmod 600 "$RUNNER_TEMP/frontend-deploy-key"
+          printf '%s\n' "$FRONTEND_EC2_KNOWN_HOSTS" > "$RUNNER_TEMP/frontend-known-hosts"
+          chmod 600 "$RUNNER_TEMP/frontend-known-hosts"
+      - name: Deploy static site to EC2
+        env:
+          FRONTEND_EC2_HOST: ${{ secrets.FRONTEND_EC2_HOST }}
+          FRONTEND_SSH_KEY_FILE: ${{ runner.temp }}/frontend-deploy-key
+          FRONTEND_KNOWN_HOSTS_FILE: ${{ runner.temp }}/frontend-known-hosts
+        run: bash ./scripts/deploy-frontend.sh dist
