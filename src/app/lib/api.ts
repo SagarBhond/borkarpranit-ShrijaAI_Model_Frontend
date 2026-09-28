@@ -1,24 +1,16 @@
 // src/app/lib/api.ts
 //
-// Talks to two backend services:
-//   - Auth Service (Spring Boot)        -> http://localhost:8081/api/auth
-//   - Orchestrator Agent (Spring Boot)  -> http://localhost:8080/api/v1/orchestrator
+// In development, talk directly to the local backend ports. In production,
+// use same-origin ALB paths so browser requests reach the ECS services.
 //
 // The Auth Service issues an HS256 JWT on login (see AuthController/AuthService).
 // That same token is sent as "Authorization: Bearer <token>" on every
 // Orchestrator call and on every privileged Auth Service call (create user, /me).
 //
-// NOTE (backend changes needed -- see chat writeup):
-//   1. auth-service must allow CORS from this dev origin (http://localhost:3000).
-//      It already does via @CrossOrigin(origins = "${auth.cors.allowed-origin}").
-//   2. orchestrator-agent currently has NO CORS config at all, and its
-//      JwtAuthenticationFilter runs on every /api/* request including CORS
-//      preflight OPTIONS calls, which have no Authorization header and would
-//      get rejected with 401. Add a CorsConfigurationSource + let the filter's
-//      shouldNotFilter() skip OPTIONS requests.
-
-const AUTH_BASE = "http://localhost:8081/api/auth";
-const ORCHESTRATOR_BASE = "http://localhost:8080/api/v1/orchestrator";
+const AUTH_BASE = import.meta.env.DEV ? "http://localhost:8081/api/auth" : "/api/auth";
+const ORCHESTRATOR_BASE = import.meta.env.DEV
+  ? "http://localhost:8080/api/v1/orchestrator"
+  : "/api/v1/orchestrator";
 
 export type Role = "EMPLOYEE" | "MANAGER" | "HR" | "ADMIN";
 
